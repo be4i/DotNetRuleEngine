@@ -7,7 +7,7 @@ using DotNetRuleEngine.Interface;
 
 namespace DotNetRuleEngine.Services
 {
-    internal sealed class RxRuleService<TK, T> where T : class, new() where TK : IGeneralRule<T>
+    internal sealed class RxRuleService<TK> where TK : IGeneralRule
     {
         private readonly IEnumerable<TK> _rules;
         private readonly Lazy<ConcurrentDictionary<Type, IList<TK>>> _proactiveRules;
@@ -26,7 +26,8 @@ namespace DotNetRuleEngine.Services
         public ConcurrentDictionary<Type, IList<TK>> GetProactiveRules() => _proactiveRules.Value;
         public ConcurrentDictionary<Type, IList<TK>> GetExceptionRules() => _exceptionRules.Value;
 
-        public IList<TK> FilterRxRules(IEnumerable<TK> rules)
+        public IList<T> FilterRxRules<T>(IEnumerable<T> rules)
+            where T : IGeneralRule
         {
             return rules.Where(r => !r.IsReactive && !r.IsProactive && !r.IsExceptionHandler && !r.IsGlobalExceptionHandler).ToList();
         }
@@ -68,7 +69,7 @@ namespace DotNetRuleEngine.Services
                        return list;
                    });
                 }
-                if (r.IsNested) GetRxRules(r.GetRules().OfType<TK>(), rxRules, predicate);
+                if (r.IsNested) GetRxRules(r.GetRules().Select(x => x.Rule).OfType<TK>(), rxRules, predicate);
             });
         }
     }

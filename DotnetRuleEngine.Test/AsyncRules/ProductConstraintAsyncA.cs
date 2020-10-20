@@ -9,7 +9,7 @@ namespace DotNetRuleEngine.Test.AsyncRules
     {
         public override Task InitializeAsync()
         {
-            Configuration.Constraint = product => product.Description == "Description";
+            Configuration.Constraint = () => Model.Description == "Description";
 
             return Task.FromResult<object>(null);
         }

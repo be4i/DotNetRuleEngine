@@ -3,12 +3,12 @@ using DotNetRuleEngine.Interface;
 
 namespace DotNetRuleEngine.Models
 {
-    public class Configuration<T> : IConfiguration<T>
+    public class Configuration : IConfiguration
     {
         /// <summary>
         /// Used to set constraint on the rule to be invoked or not.
         /// </summary>
-        public Predicate<T> Constraint { get; set; }
+        public Func<bool> Constraint { get; set; }
 
         /// <summary>
         /// Used to skip invoking the rule.

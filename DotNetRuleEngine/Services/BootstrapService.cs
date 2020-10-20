@@ -9,45 +9,50 @@ using DotNetRuleEngine.Models;
 
 namespace DotNetRuleEngine.Services
 {
-    internal sealed class BootstrapService<T> where T : class, new()
+    internal sealed class BootstrapService
     {
-        private readonly T _model;
         private readonly Guid _ruleEngineId;
         private readonly IDependencyResolver _dependencyResolver;
 
-        public BootstrapService(T model, Guid ruleEngineId, IDependencyResolver dependencyResolver)
+        public BootstrapService(Guid ruleEngineId, IDependencyResolver dependencyResolver)
         {
-            _model = model;
             _ruleEngineId = ruleEngineId;
             _dependencyResolver = dependencyResolver;
         }
 
-        public IList<IRule<T>> Bootstrap(IList<object> rules)
+        public IList<IRuleGeneral> Bootstrap(IList<IRuleDefenition> rules)
         {
             Initializer(rules);
-            return rules.OfType<IRule<T>>().ToList();
+            return 
+                rules.Select(x => x.Rule)
+                .OfType<IRuleGeneral>()
+                .ToList();
         }
 
-        public async Task<IList<IRuleAsync<T>>> BootstrapAsync(IList<object> rules)
+        public async Task<IList<IRuleAsyncGeneral>> BootstrapAsync(IList<IRuleDefenition> rules)
         {
             var initBag = new ConcurrentBag<Task>();
             InitializerAsync(rules, initBag);
 
             await Task.WhenAll(initBag);
 
-            return rules.OfType<IRuleAsync<T>>().ToList();
+            return 
+                rules.Select(x => x.Rule)
+                .OfType<IRuleAsyncGeneral>()
+                .ToList();
         }
 
-        private void Initializer(IList<object> rules,
-            IRule<T> nestingRule = null)
+        private void Initializer(IList<IRuleDefenition> rules,
+            IRuleGeneral nestingRule = null)
         {
             for (var i = 0; i < rules.Count; i++)
             {
-                var rule = ResolveRule<IRule<T>>(rules[i]);
+                var def = rules[i];
+                var rule = ResolveRule<IRuleGeneral>(def.Rule);
 
-                rules[i] = rule;
+                def.Rule = rule;
 
-                InitializeRule(rule, nestingRule);
+                InitializeRule(rule, def.Model, nestingRule);
 
                 rule.Initialize();
 
@@ -55,16 +60,17 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private void InitializerAsync(IList<object> rules,
-            ConcurrentBag<Task> initBag, IRuleAsync<T> nestingRule = null)
+        private void InitializerAsync(IList<IRuleDefenition> rules,
+            ConcurrentBag<Task> initBag, IRuleAsyncGeneral nestingRule = null)
         {
             for (var i = 0; i < rules.Count(); i++)
             {
-                var rule = ResolveRule<IRuleAsync<T>>(rules.ElementAt(i));
+                var def = rules[i];
+                var rule = ResolveRule<IRuleAsyncGeneral>(def.Rule);
 
-                rules[i] = rule;
+                def.Rule = rule;
 
-                InitializeRule(rule, nestingRule);
+                InitializeRule(rule, def.Model, nestingRule);
 
                 initBag.Add(rule.InitializeAsync());
 
@@ -72,10 +78,10 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private void InitializeRule(IGeneralRule<T> rule, IGeneralRule<T> nestingRule = null)
+        private void InitializeRule(IGeneralRule rule, object model, IGeneralRule nestingRule = null)
         {
-            rule.Model = _model;
-            rule.Configuration = new RuleEngineConfiguration<T>(rule.Configuration) { RuleEngineId = _ruleEngineId };
+            rule.Model = model;
+            rule.Configuration = new RuleEngineConfiguration(rule.Configuration) { RuleEngineId = _ruleEngineId };
 
             if (nestingRule != null && nestingRule.Configuration.NestedRulesInheritConstraint)
             {
@@ -83,14 +89,14 @@ namespace DotNetRuleEngine.Services
                 rule.Configuration.NestedRulesInheritConstraint = true;
             }
 
-            if (rule is RuleAsync<T> parallelRule && parallelRule.IsParallel &&
-                nestingRule is RuleAsync<T> nestingParallelRule)
+            if (rule is IRuleAsyncGeneral parallelRule && parallelRule.IsParallel &&
+                nestingRule is IRuleAsyncGeneral nestingParallelRule)
             {
                 if (nestingParallelRule.ParallelConfiguration != null &&
                     nestingParallelRule.ParallelConfiguration.NestedParallelRulesInherit)
                 {
                     var cancellationTokenSource = parallelRule.ParallelConfiguration.CancellationTokenSource;
-                    parallelRule.ParallelConfiguration = new ParallelConfiguration<T>
+                    parallelRule.ParallelConfiguration = new ParallelConfiguration
                     {
                         NestedParallelRulesInherit = true,
                         CancellationTokenSource = cancellationTokenSource,

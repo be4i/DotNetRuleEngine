@@ -27,7 +27,7 @@ namespace DotNetRuleEngine.Services
 
         internal const int DefaultTimeoutInMs = 15000;
 
-        public async Task AddOrUpdateAsync<T>(string key, Task<object> value, IConfiguration<T> configuration)
+        public async Task AddOrUpdateAsync(string key, Task<object> value, IConfiguration configuration)
         {
             var ruleEngineId = GetRuleEngineId(configuration);
             var keyPair = BuildKey(key, ruleEngineId);
@@ -35,7 +35,7 @@ namespace DotNetRuleEngine.Services
             await Task.FromResult(AsyncData.Value.AddOrUpdate(keyPair.First(), v => value, (k, v) => value));
         }
 
-        public async Task<object> GetValueAsync<T>(string key, IConfiguration<T> configuration,
+        public async Task<object> GetValueAsync(string key, IConfiguration configuration,
             int timeoutInMs = DefaultTimeoutInMs)
         {
             var timeout = DateTime.Now.AddMilliseconds(timeoutInMs);
@@ -52,7 +52,7 @@ namespace DotNetRuleEngine.Services
             throw new DotNetRuleEngineTimeOutException($"Unable to get {key}");
         }
 
-        public void AddOrUpdate<T>(string key, object value, IConfiguration<T> configuration)
+        public void AddOrUpdate(string key, object value, IConfiguration configuration)
         {
             var ruleEngineId = GetRuleEngineId(configuration);
             var keyPair = BuildKey(key, ruleEngineId);
@@ -60,7 +60,7 @@ namespace DotNetRuleEngine.Services
             Data.Value.AddOrUpdate(keyPair.First(), v => value, (k, v) => value);
         }
 
-        public object GetValue<T>(string key, IConfiguration<T> configuration, int timeoutInMs = DefaultTimeoutInMs)
+        public object GetValue(string key, IConfiguration configuration, int timeoutInMs = DefaultTimeoutInMs)
         {
             var timeout = DateTime.Now.AddMilliseconds(timeoutInMs);
             var ruleEngineId = GetRuleEngineId(configuration);
@@ -81,7 +81,7 @@ namespace DotNetRuleEngine.Services
         private static string[] BuildKey(string key, string ruleEngineId) =>
             new[] {string.Join("_", ruleEngineId, key), key};
 
-        private static string GetRuleEngineId<T>(IConfiguration<T> configuration) =>
-            ((RuleEngineConfiguration<T>) configuration).RuleEngineId.ToString();
+        private static string GetRuleEngineId(IConfiguration configuration) =>
+            ((RuleEngineConfiguration) configuration).RuleEngineId.ToString();
     }
 }

@@ -1,19 +1,11 @@
 ﻿namespace DotNetRuleEngine.Interface
 {
-    public interface IRule<T> : IGeneralRule<T> where T : class, new()
+    public interface IRule<T> : IRuleGeneral
     {
-        void ObserveRule<TK>() where TK : IRule<T>;
+        new T Model { get; set; }
 
-        void Initialize();
+        void AddRule(IRule<T> rule);
 
-        void BeforeInvoke();
-        
-        void AfterInvoke();
-        
-        IRuleResult Invoke();
-
-        object TryGetValue(string key, int timeoutInMs);
-
-        void TryAdd(string key, object value);        
+        void AddRule<TK>() where TK : IRule<T>;
     }
 }

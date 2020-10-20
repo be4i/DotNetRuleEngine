@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace DotNetRuleEngine.Interface
 {
-    public interface IParallelConfiguration<T> where T : class, new()
+    public interface IParallelConfiguration
     {
         TaskCreationOptions TaskCreationOptions { get; set; }
 

@@ -2,9 +2,9 @@
 
 namespace DotNetRuleEngine.Interface
 {
-    public interface IConfiguration<T>
+    public interface IConfiguration
     {
-        Predicate<T> Constraint { get; set; }
+        Func<bool> Constraint { get; set; }
 
         int? ExecutionOrder { get; set; }
 

@@ -4,15 +4,15 @@ using System.Linq;
 using DotNetRuleEngine.Exceptions;
 using DotNetRuleEngine.Interface;
 
-namespace DotNetRuleEngine.Extensions
+namespace DotNetRuleEngine
 {
     internal static class InternalExtensions
     {
-        public static bool CanInvoke<T>(this IGeneralRule<T> rule) where T : class, new() =>
-            !rule.Configuration.Skip && rule.Configuration.Constraint.Invoke2(rule.Model);
+        public static bool CanInvoke(this IGeneralRule rule) =>
+            !rule.Configuration.Skip && rule.Configuration.Constraint.Invoke2();
 
-        public static bool Invoke2<T>(this Predicate<T> predicate, T model) =>
-            predicate == null || predicate(model);
+        public static bool Invoke2(this Func<bool> predicate) =>
+            predicate == null || predicate();
 
 
         public static void AssignRuleName(this IRuleResult ruleResult, string ruleName)
@@ -25,8 +25,8 @@ namespace DotNetRuleEngine.Extensions
             if (model == null) throw new ModelInstanceNotFoundException();
         }
 
-        public static void UpdateRuleEngineConfiguration<T>(this IGeneralRule<T> rule,
-            IConfiguration<T> ruleEngineConfiguration) where T : class, new()
+        public static void UpdateRuleEngineConfiguration(this IGeneralRule rule,
+            IConfiguration ruleEngineConfiguration)
         {
             if (ruleEngineConfiguration.Terminate == null && rule.Configuration.Terminate == true)
             {
@@ -34,11 +34,11 @@ namespace DotNetRuleEngine.Extensions
             }
         }
 
-        public static bool IsRuleEngineTerminated<T>(this IConfiguration<T> ruleEngineConfiguration) where T : class, new()
+        public static bool IsRuleEngineTerminated(this IConfiguration ruleEngineConfiguration)
             => ruleEngineConfiguration.Terminate != null && ruleEngineConfiguration.Terminate.Value;
 
-        public static IEnumerable<IGeneralRule<T>> GetRulesWithExecutionOrder<T>(this IEnumerable<IGeneralRule<T>> rules,
-            Func<IGeneralRule<T>, bool> condition = null) where T : class, new()
+        public static IEnumerable<IGeneralRule> GetRulesWithExecutionOrder(this IEnumerable<IGeneralRule> rules,
+            Func<IGeneralRule, bool> condition = null)
         {
             condition = condition ?? (rule => true);
 
@@ -47,8 +47,8 @@ namespace DotNetRuleEngine.Extensions
                 .OrderBy(r => r.Configuration.ExecutionOrder);
         }
 
-        public static IEnumerable<IGeneralRule<T>> GetRulesWithoutExecutionOrder<T>(this IEnumerable<IGeneralRule<T>> rules,
-            Func<IGeneralRule<T>, bool> condition = null) where T : class, new()
+        public static IEnumerable<IGeneralRule> GetRulesWithoutExecutionOrder(this IEnumerable<IGeneralRule> rules,
+            Func<IGeneralRule, bool> condition = null)
         {
             condition = condition ?? (k => true);
 
@@ -56,7 +56,7 @@ namespace DotNetRuleEngine.Extensions
                 .Where(condition);
         }
 
-        public static IGeneralRule<T> GetGlobalExceptionHandler<T>(this IEnumerable<IGeneralRule<T>> rules) where T : class, new()
+        public static IGeneralRule GetGlobalExceptionHandler(this IEnumerable<IGeneralRule> rules)
         {
             var globalExceptionHandler = rules.Where(r => r.IsGlobalExceptionHandler).ToList();
 

@@ -8,15 +8,15 @@ using DotNetRuleEngine.Services;
 
 namespace DotNetRuleEngine
 {
-    public abstract class RuleAsync<T> : IRuleAsync<T> where T : class, new()
+    public abstract class RuleAsync<T> : IRuleAsync<T>
     {
-        private IList<object> Rules { get; set; } = new List<object>();
+        private IList<IRuleDefenition> Rules { get; } = new List<IRuleDefenition>();
 
         public T Model { get; set; }
 
         public bool IsParallel { get; set; }
 
-        public IParallelConfiguration<T> ParallelConfiguration { get; set; } = new ParallelConfiguration<T>();
+        public IParallelConfiguration ParallelConfiguration { get; set; } = new ParallelConfiguration();
 
         public bool IsNested => Rules.Any();
 
@@ -34,7 +34,8 @@ namespace DotNetRuleEngine
 
         public IDependencyResolver Resolve { get; set; }
 
-        public IConfiguration<T> Configuration { get; set; } = new Configuration<T>();
+        public IConfiguration Configuration { get; set; } = new Configuration();
+        object IGeneralRule.Model { get => Model; set => Model = (T)value; }
 
         public async Task<object> TryGetValueAsync(string key, int timeoutInMs = DataSharingService.DefaultTimeoutInMs) => 
             await DataSharingService.GetInstance().GetValueAsync(key, Configuration, timeoutInMs);
@@ -42,15 +43,9 @@ namespace DotNetRuleEngine
         public async Task TryAddAsync(string key, Task<object> value) => 
             await DataSharingService.GetInstance().AddOrUpdateAsync(key, value, Configuration);
 
-        public IList<object> GetRules() => Rules;
+        public IList<IRuleDefenition> GetRules() => Rules;
 
-        public void AddRules(params object[] rules) => Rules = rules.ToList();
-
-        public void AddRule(IGeneralRule<T> rule) => Rules.Add(rule);
-
-        public void AddRule<TK>() where TK : IGeneralRule<T> => Rules.Add(typeof(TK));
-
-        public void ObserveRule<TK>() where TK : IRuleAsync<T> => ObservedRule = typeof(TK);        
+        public void ObserveRule<TK>() where TK : IRuleAsyncGeneral => ObservedRule = typeof(TK);        
 
         public virtual async Task InitializeAsync() => await Task.FromResult<object>(null);
 
@@ -59,5 +54,25 @@ namespace DotNetRuleEngine
         public virtual async Task AfterInvokeAsync() => await Task.FromResult<object>(null);
 
         public abstract Task<IRuleResult> InvokeAsync();
+
+        public void AddRule(IRuleAsync<T> rule)
+        {
+            Rules.Add(new RuleDefenition(rule, Model));
+        }
+
+        public void AddRule<TK>() where TK : IRuleAsync<T>
+        {
+            Rules.Add(new RuleDefenition(typeof(TK), Model));
+        }
+
+        public void AddRule(IGeneralRule rule, object model)
+        {
+            Rules.Add(new RuleDefenition(rule, model));
+        }
+
+        public void AddRule<TK>(object model) where TK : IGeneralRule
+        {
+            Rules.Add(new RuleDefenition(typeof(TK), model));
+        }
     }
 }

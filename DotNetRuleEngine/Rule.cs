@@ -7,9 +7,9 @@ using DotNetRuleEngine.Services;
 
 namespace DotNetRuleEngine
 {
-    public abstract class Rule<T> : IRule<T> where T : class, new()
+    public abstract class Rule<T> : IRule<T>
     {
-        private IList<object> Rules { get; } = new List<object>();
+        private IList<IRuleDefenition> Rules { get; } = new List<IRuleDefenition>();
 
         public T Model { get; set; }
 
@@ -19,7 +19,7 @@ namespace DotNetRuleEngine
 
         public bool IsProactive { get; set; }
 
-        public void ObserveRule<TK>() where TK: IRule<T> => ObservedRule = typeof(TK);
+        public void ObserveRule<TK>() where TK: IRuleGeneral => ObservedRule = typeof(TK);
 
         public bool IsExceptionHandler { get; set; }
 
@@ -31,7 +31,8 @@ namespace DotNetRuleEngine
 
         public IDependencyResolver Resolve { get; set; }
 
-        public IConfiguration<T> Configuration { get; set; } = new Configuration<T>();
+        public IConfiguration Configuration { get; set; } = new Configuration();
+        object IGeneralRule.Model { get => Model ; set => Model = (T)value; }
 
         public object TryGetValue(string key, int timeoutInMs = DataSharingService.DefaultTimeoutInMs) =>
             DataSharingService.GetInstance().GetValue(key, Configuration);
@@ -39,19 +40,7 @@ namespace DotNetRuleEngine
         public void TryAdd(string key, object value) =>
             DataSharingService.GetInstance().AddOrUpdate(key, value, Configuration);
 
-        public IList<object> GetRules() => Rules;
-
-        public void AddRules(params object[] rules)
-        {
-            foreach (var rule in rules)
-            {
-                Rules.Add(rule);
-            }
-        }
-
-        public void AddRule(IGeneralRule<T> rule) => Rules.Add(rule);
-
-        public void AddRule<TK>() where TK : IGeneralRule<T> => Rules.Add(typeof(TK));
+        public IList<IRuleDefenition> GetRules() => Rules;
 
         public virtual void Initialize() { }
 
@@ -60,5 +49,25 @@ namespace DotNetRuleEngine
         public virtual void AfterInvoke() { }
 
         public abstract IRuleResult Invoke();
+
+        public void AddRule(IRule<T> rule)
+        {
+            Rules.Add(new RuleDefenition(rule, Model));
+        }
+
+        public void AddRule<TK>() where TK : IRule<T>
+        {
+            Rules.Add(new RuleDefenition(typeof(TK), Model));
+        }
+
+        public void AddRule(IGeneralRule rule, object model)
+        {
+            Rules.Add(new RuleDefenition(rule, model));
+        }
+
+        public void AddRule<TK>(object model) where TK : IGeneralRule
+        {
+            Rules.Add(new RuleDefenition(typeof(TK), model));
+        }
     }
 }

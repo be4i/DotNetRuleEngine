@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using DotNetRuleEngine.Interface;
 using DotNetRuleEngine.Models;
 
-namespace DotNetRuleEngine.Extensions
+namespace DotNetRuleEngine
 {
     public static class Extensions
     {
@@ -13,10 +13,10 @@ namespace DotNetRuleEngine.Extensions
 
         public static T To<T>(this Task<object> @object) => @object != null ? (T)@object.Result : default(T);
 
-        public static Guid GetRuleEngineId<T>(this IGeneralRule<T> rule) where T : class, new() =>
-            rule.Configuration.To<RuleEngineConfiguration<T>>().RuleEngineId;
+        public static Guid GetRuleEngineId(this IGeneralRule rule) =>
+            rule.Configuration.To<RuleEngineConfiguration>().RuleEngineId;
 
-        public static string GetRuleName<T>(this IGeneralRule<T> rule) where T : class, new() =>
+        public static string GetRuleName<T>(this IGeneralRule rule) =>
             rule.GetType().Name;
 
         public static IRuleResult FindRuleResult<T>(this IEnumerable<IRuleResult> ruleResults) =>
@@ -31,16 +31,8 @@ namespace DotNetRuleEngine.Extensions
         public static IEnumerable<IRuleResult> FindRuleResults(this IEnumerable<IRuleResult> ruleResults, string ruleName) =>
             ruleResults.Where(r => string.Equals(r.Name, ruleName, StringComparison.OrdinalIgnoreCase));
 
-        public static RuleEngine<T> ApplyRules<T>(this RuleEngine<T> ruleEngineExecutor,
-            params IGeneralRule<T>[] rules) where T : class, new()
-        {
-            ruleEngineExecutor.AddRules(rules);
-
-            return ruleEngineExecutor;
-        }
-
-        public static RuleEngine<T> ApplyRules<T>(this RuleEngine<T> ruleEngineExecutor,
-            params Type[] rules) where T : class, new()
+        public static RuleEngine ApplyRules(this RuleEngine ruleEngineExecutor,
+            params IRuleDefenition[] rules)
         {
             ruleEngineExecutor.AddRules(rules);
 
@@ -52,7 +44,7 @@ namespace DotNetRuleEngine.Extensions
 
         public static bool AnyError(this IEnumerable<IRuleResult> ruleResults) => ruleResults.Any(r => r.Error != null);
 
-        public static RuleType GetRuleType<T>(this IGeneralRule<T> rule) where T : class, new()
+        public static RuleType GetRuleType<T>(this IGeneralRule rule)
         {
             if (rule.IsProactive) return RuleType.ProActiveRule;
             if (rule.IsReactive) return RuleType.ReActiveRule;

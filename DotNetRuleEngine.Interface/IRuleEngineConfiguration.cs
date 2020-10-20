@@ -2,7 +2,7 @@
 
 namespace DotNetRuleEngine.Interface
 {
-    public interface IRuleEngineConfiguration<T> : IConfiguration<T>
+    public interface IRuleEngineConfiguration : IConfiguration
     {
         Guid RuleEngineId { get; set; }
     }

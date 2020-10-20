@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace DotNetRuleEngine.Interface
 {
-    public interface IGeneralRule<T> where T : class, new()
+    public interface IGeneralRule
     {
-        T Model { get; set; }
+        object Model { get; set; }
 
         bool IsNested { get; }
 
@@ -15,22 +15,20 @@ namespace DotNetRuleEngine.Interface
 
         bool IsExceptionHandler { get; set; }
 
-        bool IsGlobalExceptionHandler { get; set; }      
-        
+        bool IsGlobalExceptionHandler { get; set; }
+
         Type ObservedRule { get; }
 
         Exception UnhandledException { get; set; }
 
         IDependencyResolver Resolve { get; set; }
 
-        IConfiguration<T> Configuration { get; set; }
+        IList<IRuleDefenition> GetRules();
 
-        IList<object> GetRules();
+        IConfiguration Configuration { get; set; }
 
-        void AddRules(params object[] rules);
+        void AddRule(IGeneralRule rule, object model);
 
-        void AddRule(IGeneralRule<T> rule);
-
-        void AddRule<TK>() where TK : IGeneralRule<T>;
+        void AddRule<TK>(object model) where TK : IGeneralRule;
     }
 }

@@ -3,9 +3,9 @@ using DotNetRuleEngine.Interface;
 
 namespace DotNetRuleEngine.Models
 {
-    internal class RuleEngineConfiguration<T> : IRuleEngineConfiguration<T>
+    internal class RuleEngineConfiguration : IRuleEngineConfiguration
     {
-        public RuleEngineConfiguration(IConfiguration<T> configuration)
+        public RuleEngineConfiguration(IConfiguration configuration)
         {
             Constraint = configuration.Constraint;
             ExecutionOrder = configuration.ExecutionOrder;
@@ -17,7 +17,7 @@ namespace DotNetRuleEngine.Models
 
         public Guid RuleEngineId { get; set; }
 
-        public Predicate<T> Constraint { get; set; }
+        public Func<bool> Constraint { get; set; }
 
         public int? ExecutionOrder { get; set; }
 

@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DotNetRuleEngine.Extensions;
 using DotNetRuleEngine.Interface;
 
 namespace DotNetRuleEngine.Services
 {
-    internal class RuleService<T> where T : class, new()
+    internal class RuleService
     {
-        private readonly IEnumerable<IRule<T>> _rules;
-        private readonly IRuleEngineConfiguration<T> _ruleEngineConfiguration;
-        private readonly RxRuleService<IRule<T>, T> _rxRuleService;
+        private readonly IEnumerable<IRuleGeneral> _rules;
+        private readonly IRuleEngineConfiguration _ruleEngineConfiguration;
+        private readonly RxRuleService<IRuleGeneral> _rxRuleService;
         private readonly ICollection<IRuleResult> _ruleResults = new List<IRuleResult>();
 
-        public RuleService(IEnumerable<IRule<T>> rules,
-            IRuleEngineConfiguration<T> ruleEngineConfiguration)
+        public RuleService(IEnumerable<IRuleGeneral> rules,
+            IRuleEngineConfiguration ruleEngineConfiguration)
         {
             _rules = rules;
-            _rxRuleService = new RxRuleService<IRule<T>, T>(_rules);
+            _rxRuleService = new RxRuleService<IRuleGeneral>(_rules);
             _ruleEngineConfiguration = ruleEngineConfiguration;
         }
 
@@ -25,7 +24,7 @@ namespace DotNetRuleEngine.Services
 
         public IEnumerable<IRuleResult> GetRuleResults() => _ruleResults;
 
-        private void Execute(IEnumerable<IRule<T>> rules)
+        private void Execute(IEnumerable<IRuleGeneral> rules)
         {
             foreach (var rule in OrderByExecutionOrder(rules))
             {
@@ -55,10 +54,10 @@ namespace DotNetRuleEngine.Services
                         {
                             var globalExceptionHandler = _rules.GetGlobalExceptionHandler();
 
-                            if (globalExceptionHandler is IRule<T>)
+                            if (globalExceptionHandler is IRuleGeneral)
                             {
                                 globalExceptionHandler.UnhandledException = exception;
-                                Execute(new List<IRule<T>> { (IRule<T>)globalExceptionHandler });
+                                Execute(new List<IRuleGeneral> { (IRuleGeneral)globalExceptionHandler });
                             }
                             else
                             {
@@ -76,7 +75,7 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private void InvokeReactiveRules(IGeneralRule<T> rule)
+        private void InvokeReactiveRules(IGeneralRule rule)
         {
             if (_rxRuleService.GetReactiveRules().ContainsKey(rule.GetType()))
             {
@@ -84,7 +83,7 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private void InvokeProactiveRules(IRule<T> rule)
+        private void InvokeProactiveRules(IRuleGeneral rule)
         {
             if (_rxRuleService.GetProactiveRules().ContainsKey(rule.GetType()))
             {
@@ -92,7 +91,7 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private void InvokeExceptionRules(IRule<T> rule)
+        private void InvokeExceptionRules(IRuleGeneral rule)
         {
             var exceptionRules = _rxRuleService.GetExceptionRules()[rule.GetType()]
                 .Select(r =>
@@ -110,18 +109,26 @@ namespace DotNetRuleEngine.Services
             if (ruleResult != null) _ruleResults.Add(ruleResult);
         }
 
-        private void InvokeNestedRules(bool invokeNestedRules, IRule<T> rule)
+        private void InvokeNestedRules(bool invokeNestedRules, IRuleGeneral rule)
         {
             if (invokeNestedRules && rule.IsNested)
             {
-                Execute(_rxRuleService.FilterRxRules(OrderByExecutionOrder(rule.GetRules().OfType<IRule<T>>())));
+                Execute(
+                    _rxRuleService.FilterRxRules(
+                        OrderByExecutionOrder(
+                            rule.GetRules()
+                            .Select(x => x.Rule)
+                            .OfType<IRuleGeneral>()
+                        )
+                    )
+                );
             }
         }
 
-        private static IEnumerable<IRule<T>> OrderByExecutionOrder(IEnumerable<IRule<T>> rules)
+        private static IEnumerable<IRuleGeneral> OrderByExecutionOrder(IEnumerable<IRuleGeneral> rules)
         {
-            return rules.GetRulesWithExecutionOrder().OfType<IRule<T>>()
-                .Concat(rules.GetRulesWithoutExecutionOrder().OfType<IRule<T>>());
+            return rules.GetRulesWithExecutionOrder().OfType<IRuleGeneral>()
+                .Concat(rules.GetRulesWithoutExecutionOrder().OfType<IRuleGeneral>());
         }
     }
 }
