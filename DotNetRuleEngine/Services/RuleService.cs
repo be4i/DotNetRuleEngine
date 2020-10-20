@@ -28,10 +28,12 @@ namespace DotNetRuleEngine.Services
         {
             foreach (var rule in OrderByExecutionOrder(rules))
             {
-                InvokeNestedRules(rule.Configuration.InvokeNestedRulesFirst, rule);
+                InvokeNestedRules(rule.Configuration.InvokeNestedRulesFirst, false, rule);
 
                 if (rule.CanInvoke() && !_ruleEngineConfiguration.IsRuleEngineTerminated())
                 {
+                    InvokeNestedRules(rule.Configuration.InvokeNestedRulesFirst, true, rule);
+
                     InvokeProactiveRules(rule);
 
                     try
@@ -69,9 +71,11 @@ namespace DotNetRuleEngine.Services
                     rule.UpdateRuleEngineConfiguration(_ruleEngineConfiguration);
 
                     InvokeReactiveRules(rule);
+
+                    InvokeNestedRules(!rule.Configuration.InvokeNestedRulesFirst, true, rule);
                 }
 
-                InvokeNestedRules(!rule.Configuration.InvokeNestedRulesFirst, rule);
+                InvokeNestedRules(!rule.Configuration.InvokeNestedRulesFirst, false, rule);
             }
         }
 
@@ -109,7 +113,7 @@ namespace DotNetRuleEngine.Services
             if (ruleResult != null) _ruleResults.Add(ruleResult);
         }
 
-        private void InvokeNestedRules(bool invokeNestedRules, IRuleGeneral rule)
+        private void InvokeNestedRules(bool invokeNestedRules, bool invoked, IRuleGeneral rule)
         {
             if (invokeNestedRules && rule.IsNested)
             {
@@ -119,6 +123,8 @@ namespace DotNetRuleEngine.Services
                             rule.GetRules()
                             .Select(x => x.Rule)
                             .OfType<IRuleGeneral>()
+                            .Where(x => x.Configuration.InvokeOnlyIfParent == invoked)
+                            .ToList()
                         )
                     )
                 );

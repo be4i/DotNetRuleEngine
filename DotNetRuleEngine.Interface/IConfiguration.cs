@@ -14,6 +14,8 @@ namespace DotNetRuleEngine.Interface
 
         bool InvokeNestedRulesFirst { get; set; }
 
+        bool InvokeOnlyIfParent { get; set; }
+
         bool NestedRulesInheritConstraint { get; set; }
     }
 }

@@ -48,10 +48,12 @@ namespace DotNetRuleEngine.Services
 
             foreach (var rule in OrderByExecutionOrder(rules))
             {
-                await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, rule);
+                await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, false, rule);
 
                 if (rule.CanInvoke() && !_ruleEngineConfiguration.IsRuleEngineTerminated())
                 {
+                    await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, true, rule);
+
                     try
                     {
                         await InvokeProactiveRulesAsync(rule);
@@ -85,9 +87,10 @@ namespace DotNetRuleEngine.Services
                         }
                     }
 
+                    await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, true, rule);
                 }
 
-                await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, rule);
+                await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, false, rule);
             }
         }
 
@@ -95,10 +98,12 @@ namespace DotNetRuleEngine.Services
         {
             foreach (var rule in GetParallelRules(rules))
             {
-                await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, rule);
+                await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, false, rule);
 
                 if (rule.CanInvoke() && !_ruleEngineConfiguration.IsRuleEngineTerminated())
                 {
+                    await InvokeNestedRulesAsync(rule.Configuration.InvokeNestedRulesFirst, true, rule);
+
                     await InvokeProactiveRulesAsync(rule);
 
                     _parallelRuleResults.Add(await Task.Factory.StartNew(async () =>
@@ -139,9 +144,11 @@ namespace DotNetRuleEngine.Services
                         rule.ParallelConfiguration.TaskScheduler));
 
                     await InvokeReactiveRulesAsync(rule);
+
+                    await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, true, rule);
                 }
 
-                await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, rule);
+                await InvokeNestedRulesAsync(!rule.Configuration.InvokeNestedRulesFirst, false, rule);
             }
         }
 
@@ -193,7 +200,7 @@ namespace DotNetRuleEngine.Services
             await ExecuteAsyncRules(exceptionRules);
         }
 
-        private async Task InvokeNestedRulesAsync(bool invokeNestedRules, IRuleAsyncGeneral rule)
+        private async Task InvokeNestedRulesAsync(bool invokeNestedRules, bool invoked, IRuleAsyncGeneral rule)
         {
             if (invokeNestedRules && rule.IsNested)
             {
@@ -202,6 +209,7 @@ namespace DotNetRuleEngine.Services
                         rule.GetRules()
                         .Select(x => x.Rule)
                         .OfType<IRuleAsyncGeneral>()
+                        .Where(x => x.Configuration.InvokeOnlyIfParent = invoked)
                         .ToList()
                     )
                 );

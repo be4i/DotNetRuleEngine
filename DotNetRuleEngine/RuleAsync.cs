@@ -70,6 +70,33 @@ namespace DotNetRuleEngine
             Rules.Add(new RuleDefenition(rule, model));
         }
 
+        public void AddRule<TRule, TModel>(TModel model) 
+            where TRule : IRuleConcrateModel<TModel>
+        {
+            Rules.Add(new RuleDefenition(typeof(TRule), model));
+        }
+
+        public async Task<TValue> TryGetValueAsync<TValue>(string key, int timeoutInMs = 15000)
+        {
+            var value = await TryGetValueAsync(key, timeoutInMs);
+
+            return (TValue)value;
+        }
+
+        public void AddRuleIfInvoke<TRule>(int? executionOrder = null)
+            where TRule : IRuleAsync<T>
+        {
+            var rule = Resolve.GetService<TRule>();
+
+            this.AddRuleIfInvoke(rule, Model, executionOrder);
+        }
+
+        public void AddRule<TRule>(int? executionOrder)
+            where TRule : IRuleAsync<T>
+        {
+            this.AddRule<TRule, T>(Model, executionOrder);
+        }
+
         public void AddRule<TK>(object model) where TK : IGeneralRule
         {
             Rules.Add(new RuleDefenition(typeof(TK), model));

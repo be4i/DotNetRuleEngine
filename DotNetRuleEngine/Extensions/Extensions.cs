@@ -52,6 +52,63 @@ namespace DotNetRuleEngine
 
             return RuleType.None;
         }
+
+        public static void AddRuleIfInvoke<TRule, TModel>(this IGeneralRule @this, TModel model, int? executionOrder = null)
+            where TRule : IRuleConcrateModel<TModel>
+        {
+            var rule = @this.Resolve.GetService<TRule>();
+
+            @this.AddRuleIfInvoke(rule, model, executionOrder);
+        }
+
+        public static void AddRuleIfInvoke<TRule, TModel>(this IGeneralRule @this, TRule rule, TModel model, int? executionOrder = null)
+            where TRule : IRuleConcrateModel<TModel>
+        {
+            rule.Configuration.InvokeOnlyIfParent = true;
+            rule.Configuration.ExecutionOrder = executionOrder;
+
+            @this.AddRule(rule, model);
+        }
+
+        public static void AddRule<TRule, TModel>(this IGeneralRule @this, TModel model, int? executionOrder)
+            where TRule : IRuleConcrateModel<TModel>
+        {
+            var rule = @this.Resolve.GetService<TRule>();
+            rule.Configuration.ExecutionOrder = executionOrder;
+
+            @this.AddRule(rule, model);
+        }
+
+        public static T GetService<T>(this IDependencyResolver @this)
+        {
+            var service = @this.GetService(typeof(T));
+
+            return (T)service;
+        }
+
+        public static IRuleResult WithName(this IEnumerable<IRuleResult> @this, string name)
+        {
+            return @this.FirstOrDefault(x => x.Name == name);
+        }
+
+        public static bool HasErrors(this IEnumerable<IRuleResult> @this)
+        {
+            return @this.Any(x => x.Error != null);
+        }
+
+        public static IError FirstError(this IEnumerable<IRuleResult> @this)
+        {
+            return
+                @this.Where(x => x.Error != null)
+                .Select(x => x.Error)
+                .FirstOrDefault();
+        }
+
+        public static RuleEngine GetEngine(this IDependencyResolver @this)
+        {
+
+            return RuleEngine.GetInstance(@this);
+        }
     }
 
     public enum RuleType

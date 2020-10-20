@@ -34,5 +34,10 @@ namespace DotNetRuleEngine.Models
         /// Used to set whether the nested rules inherits the constraint from the containing rule.
         /// </summary>
         public bool NestedRulesInheritConstraint { get; set; }
+
+        /// <summary>
+        /// Used to set whether rule will only invoke if the parent does. 
+        /// </summary>
+        public bool InvokeOnlyIfParent { get; set; }
     }
 }

@@ -13,6 +13,7 @@ namespace DotNetRuleEngine.Models
             Terminate = configuration.Terminate;
             InvokeNestedRulesFirst = configuration.InvokeNestedRulesFirst;
             NestedRulesInheritConstraint = configuration.NestedRulesInheritConstraint;
+            InvokeOnlyIfParent = configuration.InvokeOnlyIfParent;
         }
 
         public Guid RuleEngineId { get; set; }
@@ -28,5 +29,7 @@ namespace DotNetRuleEngine.Models
         public bool InvokeNestedRulesFirst { get; set; }
 
         public bool NestedRulesInheritConstraint { get; set; }
+
+        public bool InvokeOnlyIfParent { get; set; }
     }
 }

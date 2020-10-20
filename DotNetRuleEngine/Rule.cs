@@ -69,5 +69,26 @@ namespace DotNetRuleEngine
         {
             Rules.Add(new RuleDefenition(typeof(TK), model));
         }
+
+        public TValue TryGetValue<TValue>(string key)
+        {
+            var value = TryGetValue(key);
+
+            return (TValue)value;
+        }
+
+        public void AddRuleIfInvoke<TRule>(int? executionOrder = null)
+            where TRule : IRule<T>
+        {
+            var rule = Resolve.GetService<TRule>();
+
+            this.AddRuleIfInvoke(rule, Model, executionOrder);
+        }
+
+        public void AddRule<TRule>(int? executionOrder)
+            where TRule : IRule<T>
+        {
+            this.AddRule<TRule, T>(Model, executionOrder);
+        }
     }
 }
