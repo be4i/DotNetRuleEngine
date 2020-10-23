@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNetRuleEngine.Interface;
 using DotNetRuleEngine.Models;
@@ -47,13 +48,13 @@ namespace DotNetRuleEngine
 
         public void ObserveRule<TK>() where TK : IRuleAsyncGeneral => ObservedRule = typeof(TK);        
 
-        public virtual async Task InitializeAsync() => await Task.FromResult<object>(null);
+        public virtual async Task InitializeAsync(CancellationToken cancellationToken) => await Task.FromResult<object>(null);
 
-        public virtual async Task BeforeInvokeAsync() => await Task.FromResult<object>(null);
+        public virtual async Task BeforeInvokeAsync(CancellationToken cancellationToken) => await Task.FromResult<object>(null);
 
-        public virtual async Task AfterInvokeAsync() => await Task.FromResult<object>(null);
+        public virtual async Task AfterInvokeAsync(CancellationToken cancellationToken) => await Task.FromResult<object>(null);
 
-        public abstract Task<IRuleResult> InvokeAsync();
+        public abstract Task<IRuleResult> InvokeAsync(CancellationToken cancellationToken);
 
         public void AddRule(IRuleAsync<T> rule)
         {

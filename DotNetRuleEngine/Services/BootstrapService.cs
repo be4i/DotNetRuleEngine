@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNetRuleEngine.Exceptions;
 using DotNetRuleEngine.Interface;
@@ -29,10 +30,10 @@ namespace DotNetRuleEngine.Services
                 .ToList();
         }
 
-        public async Task<IList<IRuleAsyncGeneral>> BootstrapAsync(IList<IRuleDefenition> rules)
+        public async Task<IList<IRuleAsyncGeneral>> BootstrapAsync(IList<IRuleDefenition> rules, CancellationToken cancellationToken)
         {
             var initBag = new ConcurrentBag<Task>();
-            InitializerAsync(rules, initBag);
+            InitializerAsync(rules, initBag, cancellationToken);
 
             await Task.WhenAll(initBag);
 
@@ -61,7 +62,7 @@ namespace DotNetRuleEngine.Services
         }
 
         private void InitializerAsync(IList<IRuleDefenition> rules,
-            ConcurrentBag<Task> initBag, IRuleAsyncGeneral nestingRule = null)
+            ConcurrentBag<Task> initBag, CancellationToken cancellationToken, IRuleAsyncGeneral nestingRule = null)
         {
             for (var i = 0; i < rules.Count(); i++)
             {
@@ -72,9 +73,9 @@ namespace DotNetRuleEngine.Services
 
                 InitializeRule(rule, def.Model, nestingRule);
 
-                initBag.Add(rule.InitializeAsync());
+                initBag.Add(rule.InitializeAsync(cancellationToken));
 
-                if (rule.IsNested) InitializerAsync(rule.GetRules(), initBag, rule);
+                if (rule.IsNested) InitializerAsync(rule.GetRules(), initBag, cancellationToken, rule);
             }
         }
 

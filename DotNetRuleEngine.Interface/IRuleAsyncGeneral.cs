@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DotNetRuleEngine.Interface
@@ -13,13 +14,13 @@ namespace DotNetRuleEngine.Interface
 
         void ObserveRule<TK>() where TK : IRuleAsyncGeneral;
 
-        Task InitializeAsync();
+        Task InitializeAsync(CancellationToken cancellationToken);
 
-        Task BeforeInvokeAsync();
+        Task BeforeInvokeAsync(CancellationToken cancellationToken);
 
-        Task AfterInvokeAsync();
+        Task AfterInvokeAsync(CancellationToken cancellationToken);
 
-        Task<IRuleResult> InvokeAsync();
+        Task<IRuleResult> InvokeAsync(CancellationToken cancellationToken);
 
         Task<object> TryGetValueAsync(string key, int timeoutInMs);
 

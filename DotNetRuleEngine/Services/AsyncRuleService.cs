@@ -12,16 +12,20 @@ namespace DotNetRuleEngine.Services
     {
         private readonly IEnumerable<IRuleAsyncGeneral> _rules;
         private readonly IRuleEngineConfiguration _ruleEngineConfiguration;
+        private readonly CancellationToken _cancellationToken;
         private readonly RxRuleService<IRuleAsyncGeneral> _rxRuleService;
         private readonly ConcurrentBag<IRuleResult> _asyncRuleResults = new ConcurrentBag<IRuleResult>();
         private readonly ConcurrentBag<Task<IRuleResult>> _parallelRuleResults = new ConcurrentBag<Task<IRuleResult>>();
 
-        public AsyncRuleService(IEnumerable<IRuleAsyncGeneral> rules,
-            IRuleEngineConfiguration ruleEngineTerminated)
+        public AsyncRuleService(
+            IEnumerable<IRuleAsyncGeneral> rules,
+            IRuleEngineConfiguration ruleEngineTerminated,
+            CancellationToken cancellationToken)
         {
             _rules = rules;
             _rxRuleService = new RxRuleService<IRuleAsyncGeneral>(_rules);
             _ruleEngineConfiguration = ruleEngineTerminated;
+            _cancellationToken = cancellationToken;
         }
 
         public async Task InvokeAsync()
@@ -58,7 +62,7 @@ namespace DotNetRuleEngine.Services
                     {
                         await InvokeProactiveRulesAsync(rule);
 
-                        AddToAsyncRuleResults(await ExecuteRuleAsync(rule));
+                        AddToAsyncRuleResults(await ExecuteRuleAsync(rule, _cancellationToken));
                         rule.UpdateRuleEngineConfiguration(_ruleEngineConfiguration);
 
                         await InvokeReactiveRulesAsync(rule);
@@ -112,7 +116,7 @@ namespace DotNetRuleEngine.Services
 
                         try
                         {
-                            ruleResult = await ExecuteRuleAsync(rule);
+                            ruleResult = await ExecuteRuleAsync(rule, _cancellationToken);
                         }
                         catch (Exception exception)
                         {
@@ -152,9 +156,9 @@ namespace DotNetRuleEngine.Services
             }
         }
 
-        private static async Task<IRuleResult> ExecuteRuleAsync(IRuleAsyncGeneral rule)
+        private static async Task<IRuleResult> ExecuteRuleAsync(IRuleAsyncGeneral rule, CancellationToken cancellationToken)
         {
-            await rule.BeforeInvokeAsync();
+            await rule.BeforeInvokeAsync(cancellationToken);
 
             if (rule.IsParallel && rule.ParallelConfiguration.CancellationTokenSource != null &&
                 rule.ParallelConfiguration.CancellationTokenSource.Token.IsCancellationRequested)
@@ -162,9 +166,9 @@ namespace DotNetRuleEngine.Services
                 return null;
             }
 
-            var ruleResult = await rule.InvokeAsync();
+            var ruleResult = await rule.InvokeAsync(cancellationToken);
 
-            await rule.AfterInvokeAsync();
+            await rule.AfterInvokeAsync(cancellationToken);
 
             ruleResult.AssignRuleName(rule.GetType().Name);
 

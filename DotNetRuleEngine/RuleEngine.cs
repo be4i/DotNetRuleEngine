@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNetRuleEngine.Exceptions;
 using DotNetRuleEngine.Interface;
@@ -68,18 +69,33 @@ namespace DotNetRuleEngine
         /// Used to execute async rules.
         /// </summary>
         /// <returns></returns>
-        public async Task<IEnumerable<IRuleResult>> ExecuteAsync()
+        public async Task<IEnumerable<IRuleResult>> ExecuteAsync(CancellationToken cancellationToken = default)
         {
             if (!_rules.Any()) return Enumerable.Empty<IRuleResult>().ToArray();
 
-            var rules = await new BootstrapService(_ruleEngineId, _dependencyResolver)
-                .BootstrapAsync(_rules);
+            CancellationTokenSource source = null;
 
-            _asyncRuleService = new AsyncRuleService(rules, _ruleEngineConfiguration);
+            if(cancellationToken == default)
+            {
+                source = new CancellationTokenSource();
+                cancellationToken = source.Token;
+            }
 
-            await _asyncRuleService.InvokeAsync();
+            try
+            {
+                var rules = await new BootstrapService(_ruleEngineId, _dependencyResolver)
+                    .BootstrapAsync(_rules, cancellationToken);
 
-            return await _asyncRuleService.GetAsyncRuleResultsAsync();
+                _asyncRuleService = new AsyncRuleService(rules, _ruleEngineConfiguration, cancellationToken);
+
+                await _asyncRuleService.InvokeAsync();
+
+                return await _asyncRuleService.GetAsyncRuleResultsAsync();
+            }
+            finally
+            {
+                source?.Dispose();
+            }
         }
 
         /// <summary>
